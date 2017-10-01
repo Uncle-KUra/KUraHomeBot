@@ -14,10 +14,11 @@ import EggSubmode
 
 ALLOWED_USERS = 'allowed_users'
 TOKEN = 'token'
+DEBUG = 'debug'
 
 TEXT = 'text'
 
-config = {ALLOWED_USERS: [], TOKEN: None}
+config = {ALLOWED_USERS: [], TOKEN: None, DEBUG: False}
 
 
 class User:
@@ -43,8 +44,19 @@ class User:
     def get_submode_state(self, submode):
         return self.submode_state.get(submode.get_name(), None)
 
+    @staticmethod
+    def print_input_debug(msg):
+        if not config[DEBUG]:
+            return
+        content_type, chat_type, chat_id = telepot.glance(msg)
+        text = 'NOT A TEXT'
+        if content_type == TEXT:
+            text = msg[TEXT]
+        print(content_type, chat_type, chat_id, text, sep=' || ')
+
     def handle(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
+        self.print_input_debug(msg)
         status = Response.STATUS_OK
         resp = Response.Response()
         if content_type == TEXT:
