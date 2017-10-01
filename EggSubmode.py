@@ -52,6 +52,6 @@ class EggSubmode:
         except Exception as ex:
             resp = Response.SubResponse()
             resp.add_text_answer('uuups')
-            resp.add_text_answer(str(ex))
-            resp.add_text_answer(str(ex.args))
+            resp.add_debug(str(ex))
+            resp.add_debug(str(ex.args))
             return resp

@@ -54,14 +54,21 @@ class User:
             text = msg[TEXT]
         print(content_type, chat_type, chat_id, text, sep=' || ')
 
+    @staticmethod
+    def print_output_debug(debug):
+        if not config[DEBUG]:
+            return
+        for x in debug:
+            print('DEBUG:', x)
+
     def handle(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
         self.print_input_debug(msg)
         status = Response.STATUS_OK
         resp = Response.Response()
+        sub_resp = None
         if content_type == TEXT:
             text_parts = msg[TEXT].strip().split(' ', 1) + ['']
-            sub_resp = None
             if self.current_submode is None:
                 if text_parts[0] in self.sub_modes:
                     self.current_submode = self.sub_modes[text_parts[0]]
@@ -72,10 +79,12 @@ class User:
                 state = self.get_submode_state(self.current_submode)
                 sub_resp = self.current_submode.handle_text(msg[TEXT].strip(), state)
                 self.convert_response(resp, sub_resp)
-            if sub_resp and self.current_submode and sub_resp.state:
+        if sub_resp:
+            if self.current_submode and sub_resp.state:
                 self.set_submode_state(self.current_submode, sub_resp.state)
-            if sub_resp and sub_resp.want_exit:
+            if sub_resp.want_exit:
                 self.current_submode = None
+            self.print_output_debug(sub_resp.debug)
 
         resp.status = status
         return resp
