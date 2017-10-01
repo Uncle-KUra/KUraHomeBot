@@ -33,9 +33,10 @@ class SubTextAnswer:
 
 
 class SubResponse:
-    def __init__(self, status=STATUS_OK):
+    def __init__(self, status=STATUS_OK, want_exit=False):
         self.answers = list()
         self.status = status
+        self.want_exit = want_exit
 
     def add_text_answer(self, text):
         self.answers.append(SubTextAnswer(text))

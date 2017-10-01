@@ -42,6 +42,7 @@ class User:
         resp = Response.Response()
         if content_type == TEXT:
             text_parts = msg[TEXT].strip().split(' ', 1) + ['']
+            sub_resp = None
             if self.current_submode is None:
                 if text_parts[0] in self.sub_modes:
                     self.current_submode = self.sub_modes[text_parts[0]]
@@ -50,6 +51,8 @@ class User:
             else:
                 sub_resp = self.current_submode.start(msg[TEXT].strip())
                 self.convert_response(resp, sub_resp)
+            if sub_resp and sub_resp.want_exit:
+                self.current_submode = None
 
         resp.status = status
         return resp

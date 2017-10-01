@@ -20,7 +20,10 @@ class EggSubmode:
 
     def handle_text(self, text):
         try:
-            parts = text.strip().split()
+            text = text.strip()
+            if text == 'exit':
+                return Response.SubResponse(want_exit=True)
+            parts = text.split()
             self.cost = float(parts[0])
             self.exist = float(parts[1])
             self.delta = float(parts[2])
