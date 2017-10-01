@@ -8,6 +8,10 @@ ANSWER_TEXT = 'TEXT'
 class Answer:
     def __init__(self, chat_id):
         self.chat_id = chat_id
+        self.buttons = list()
+
+    def add_button(self, name):
+        self.buttons.append(name)
 
 
 class TextAnswer(Answer):
@@ -24,6 +28,9 @@ class Response:
 
     def add_text_answer(self, chat_id, text):
         self.answers.append(TextAnswer(chat_id, text))
+
+    def add_answer(self, answer):
+        self.answers.append(answer)
 
 
 class SubTextAnswer:

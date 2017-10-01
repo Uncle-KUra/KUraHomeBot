@@ -6,6 +6,8 @@ import json
 
 import telepot
 from telepot.loop import MessageLoop
+from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 import Response
 
@@ -24,12 +26,14 @@ config = {ALLOWED_USERS: [], TOKEN: None, DEBUG: False}
 class User:
     def __init__(self, user):
         self.sub_modes = dict()
+        self.submode_list = list()
         self.register(EggSubmode.EggSubmode())
         self.current_submode = None
         self.user = user
         self.submode_state = dict()
 
     def register(self, submode):
+        self.submode_list.append(submode.get_name())
         self.sub_modes[submode.get_name()] = submode
         self.sub_modes[submode.get_name().lower()] = submode
 
@@ -61,7 +65,13 @@ class User:
         for x in debug:
             print('DEBUG:', x)
 
-    def handle(self, msg):
+    def output_buttons(self, resp):
+        answer = Response.TextAnswer(self.user, 'Modes:')
+        for mode in self.submode_list:
+            answer.add_button(mode)
+        resp.add_answer(answer)
+
+    def on_chat_message(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
         self.print_input_debug(msg)
         status = Response.STATUS_OK
@@ -75,6 +85,8 @@ class User:
                     state = self.get_submode_state(self.current_submode)
                     sub_resp = self.current_submode.start(text_parts[1], state)
                     self.convert_response(resp, sub_resp)
+                else:
+                    self.output_buttons(resp)
             else:
                 state = self.get_submode_state(self.current_submode)
                 sub_resp = self.current_submode.handle_text(msg[TEXT].strip(), state)
@@ -103,7 +115,7 @@ def get_user_by_chat_id(chat_id):
     return users[chat_id]
 
 
-def handle(msg):
+def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
 
     user = get_user_by_chat_id(chat_id)
@@ -112,11 +124,25 @@ def handle(msg):
         bot.sendMessage(chat_id, 'Not allowed to talk with you')
         print('not allowed', chat_id, msg['chat']['first_name'])
     else:
-        resp = user.handle(msg)
+        resp = user.on_chat_message(msg)
         if resp.status == Response.STATUS_OK:
             for answer in resp.answers:
                 if answer.type == Response.ANSWER_TEXT:
-                    bot.sendMessage(answer.chat_id, answer.text)
+                    if answer.buttons:
+                        keyboard = list()
+                        for button in answer.buttons:
+                            keyboard.append([InlineKeyboardButton(text=button, callback_data='press')])
+                        bot.sendMessage(answer.chat_id,
+                                        answer.text,
+                                        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard))
+                    else:
+                        bot.sendMessage(answer.chat_id, answer.text)
+
+
+def on_callback_query(msg):
+    query_id, from_id, query_data = telepot.glance(msg, flavor='callback_query')
+
+    print(query_id, from_id, query_data)
 
 
 if __name__ == '__main__':
@@ -132,7 +158,8 @@ if __name__ == '__main__':
     print('Config allowed users:', config[ALLOWED_USERS])
 
     bot = telepot.Bot(config[TOKEN])
-    MessageLoop(bot, handle).run_as_thread()
+    MessageLoop(bot, {'chat': on_chat_message,
+                      'callback_query': on_callback_query}).run_as_thread()
     print('Listening ...')
 
     # Keep the program running.
