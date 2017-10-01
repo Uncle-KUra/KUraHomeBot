@@ -37,6 +37,10 @@ class SubResponse:
         self.answers = list()
         self.status = status
         self.want_exit = want_exit
+        self.state = None
 
     def add_text_answer(self, text):
         self.answers.append(SubTextAnswer(text))
+
+    def store_state(self, data):
+        self.state = data

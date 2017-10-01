@@ -26,6 +26,7 @@ class User:
         self.register(EggSubmode.EggSubmode())
         self.current_submode = None
         self.user = user
+        self.submode_state = dict()
 
     def register(self, submode):
         self.sub_modes[submode.get_name()] = submode
@@ -35,6 +36,12 @@ class User:
         for ans in sub_response.answers:
             if ans.type == Response.ANSWER_TEXT:
                 resp.add_text_answer(self.user, ans.text)
+
+    def set_submode_state(self, submode, state):
+        self.submode_state[submode.get_name()] = state
+
+    def get_submode_state(self, submode):
+        return self.submode_state.get(submode.get_name(), None)
 
     def handle(self, msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
@@ -46,11 +53,15 @@ class User:
             if self.current_submode is None:
                 if text_parts[0] in self.sub_modes:
                     self.current_submode = self.sub_modes[text_parts[0]]
-                    sub_resp = self.current_submode.start(text_parts[1])
+                    state = self.get_submode_state(self.current_submode)
+                    sub_resp = self.current_submode.start(text_parts[1], state)
                     self.convert_response(resp, sub_resp)
             else:
-                sub_resp = self.current_submode.start(msg[TEXT].strip())
+                state = self.get_submode_state(self.current_submode)
+                sub_resp = self.current_submode.handle_text(msg[TEXT].strip(), state)
                 self.convert_response(resp, sub_resp)
+            if sub_resp and self.current_submode and sub_resp.state:
+                self.set_submode_state(self.current_submode, sub_resp.state)
             if sub_resp and sub_resp.want_exit:
                 self.current_submode = None
 
